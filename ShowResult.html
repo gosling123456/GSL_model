@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像对比标注工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 25px 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .config-section {
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eaeaea;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+        }
+        
+        .config-item label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .config-item select, .config-item input {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        
+        .config-item select:focus, .config-item input:focus {
+            outline: none;
+            border-color: #6a11cb;
+            box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.2);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(37, 117, 252, 0.3);
+            align-self: flex-end;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(37, 117, 252, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .image-section {
+            padding: 30px;
+        }
+        
+        .image-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .image-row {
+            display: flex;
+            margin-bottom: 20px;
+            min-width: max-content;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 10px;
+        }
+        
+        .position-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #6a11cb;
+            background: rgba(106, 17, 203, 0.1);
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+        
+        .image-tile {
+            position: relative;
+            margin-right: 15px;
+            border: 3px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+            overflow: hidden;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+            width: 120px;
+        }
+        
+        .image-tile:hover {
+            transform: scale(1.03);
+            border-color: #6a11cb;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .image-tile.selected {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+        }
+        
+        .image-tile img {
+            display: block;
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        
+        .tile-label {
+            text-align: center;
+            font-weight: 500;
+            padding: 5px;
+            font-size: 0.9rem;
+            background: #f8f9fa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .status-bar {
+            background: #e9f5ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-text {
+            font-weight: 500;
+            font-size: 1.1rem;
+            align-items: center;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(106, 17, 203, 0.3);
+            border-radius: 50%;
+            border-top-color: #6a11cb;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .instructions {
+            background: #fff8e6;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .selection-info {
+            background: #e6f7ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .image-name-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+        }
+        
+        .placeholder-img {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100px;
+            background: #f0f0f0;
+            color: #999;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>图像对比标注工具</h1>
+            <p class="subtitle">对比不同方法的结果，选择最佳图像块保存到label文件夹</p>
+        </header>
+        
+        <section class="config-section">
+            <div class="config-item">
+                <label for="hard-level">难度级别</label>
+                <select id="hard-level">
+                    <option value="难度1">难度1</option>
+                    <option value="难度2">难度2</option>
+                    <option value="难度3">难度3</option>
+                    <option value="难度4">难度4</option>
+                </select>
+            </div>
+            
+            <div class="config-item">
+                <label for="image-name">图像名称</label>
+                <select id="image-name" class="image-name-select">
+                    <option value="1.png">1.png</option>
+                    <option value="2.png">2.png</option>
+                    <option value="3.png">3.png</option>
+                    <option value="4.png">4.png</option>
+                    <option value="5.png">5.png</option>
+                    <option value="6.png">6.png</option>
+                    <option value="7.png">7.png</option>
+                    <option value="0.bmp">0.bmp</option>
+                    <option value="1.bmp">1.bmp</option>
+                    <option value="2.bmp">2.bmp</option>
+                    <option value="3.bmp">3.bmp</option>
+                    <option value="4.bmp">4.bmp</option>
+                    <option value="5.bmp">5.bmp</option>
+                    <option value="6.bmp">6.bmp</option>
+                    <option value="7.bmp">7.bmp</option>
+                    <option value="8.bmp">8.bmp</option>
+                    <option value="9.bmp">9.bmp</option>
+                </select>
+            </div>
+            
+            <div class="config-item">
+                <label for="show_num">最多显示图像数</label>
+                <input type="number" id="show_num" placeholder="例如: 100">
+            </div>
+            <button class="btn" id="process-btn">处理图像</button>
+        </section>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ol>
+                <li>选择难度级别和图像名称</li>
+                <li>点击"处理图像"按钮加载图像块</li>
+                <li>每个位置显示一行，包含不同方法的结果</li>
+                <li>点击您认为最佳的图像块（该位置会高亮显示）</li>
+                <li>点击"保存选择"将选中的图像块保存到label文件夹</li>
+                <li>重复以上过程直到完成所有标注</li>
+            </ol>
+        </div>
+        
+        <section class="image-section">
+            <div class="image-container" id="image-container">
+                <div id="placeholder" style="text-align: center; padding: 50px; color: #777;">
+                    <h3>请选择难度级别和图像名称，然后点击"处理图像"</h3>
+                    <p>系统将加载并显示所有位置的图像块</p>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-text">
+                    <span id="status-icon"></span>
+                    <span id="status-text">准备就绪</span>
+                </div>
+                <!-- <div class="selection-info">
+                    已选择: <span id="selected-count">0</span> 个图像块 | 
+                    <button class="btn" id="save-btn" disabled>保存选择</button>
+                </div> -->
+            </div>
+        </section>
+        
+        <footer>
+            <p>图像对比标注工具 &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局变量
+        let imageTiles = [];
+        let selectedTiles = {};
+        const methods = ['A', 'B', 'label', 'FE', 'FE-diff', 'FE-conc', 'BIT', 'Changeformer', 'EATDer', 'DDRL', 'SFEARNet'];
+
+        
+        
+        // DOM元素
+        const hardLevelSelect = document.getElementById('hard-level');
+        const imageNameSelect = document.getElementById('image-name');
+        const imagenumsSelect = document.getElementById('show_num');
+        const processBtn = document.getElementById('process-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const imageContainer = document.getElementById('image-container');
+        const statusIcon = document.getElementById('status-icon');
+        const statusText = document.getElementById('status-text');
+        const selectedCount = document.getElementById('selected-count');
+        
+        // const tileCount = 4; // 假设每个图像被分成4块
+        // let tileCount;
+        // if (imageNameSelect.value=='0.bmp' || imageNameSelect.value=='1.bmp' || imageNameSelect.value=='2.bmp' || imageNameSelect.value=='3.bmp' || imageNameSelect.value=='5.bmp' || imageNameSelect.value=='7.bmp' || imageNameSelect.value=='8.bmp'|| imageNameSelect.value=='9.bmp' ) {
+        //     tileCount = 4;
+        // } else if (imageNameSelect.value=='4.png' || imageNameSelect.value=='6.png') {
+        //     tileCount = 1;
+        // } else if (imageNameSelect.value=='1.png'){
+        //     tileCount = 812;
+        // } else if (imageNameSelect.value=='2.png') {
+        //     tileCount = 870;
+        // } else if (imageNameSelect.value=='3.png') {
+        //     tileCount = 726;
+        // } else if (imageNameSelect.value=='4.png') {
+        //     tileCount = 650;
+        // } else if (imageNameSelect.value=='5.png') {
+        //     tileCount = 957;
+        // } else if (imageNameSelect.value=='6.png') {
+        //     tileCount = 30;
+        // } else if (imageNameSelect.value=='7.png') {
+        //     tileCount = 400;
+        // }
+
+        // 事件监听器
+        processBtn.addEventListener('click', processImages);
+        saveBtn.addEventListener('click', saveSelections);
+        
+        function updateStatus(message, type = 'info') {
+            statusText.textContent = message;
+            
+            if (type === 'loading') {
+                statusIcon.innerHTML = '<div class="loading"></div>';
+                statusText.className = '';
+            } else if (type === 'success') {
+                statusIcon.innerHTML = '';
+                statusText.className = 'success';
+            } else if (type === 'error') {
+                statusIcon.innerHTML = '';
+                statusText.className = 'error';
+            } else {
+                statusIcon.innerHTML = '';
+                statusText.className = '';
+            }
+        }
+        
+        function processImages() {
+            let hardLevel  = hardLevelSelect.value;
+            const imageName = imageNameSelect.value;
+            
+            if (hardLevelSelect.value === '难度2' || hardLevelSelect.value === '难度3'){
+                hardLevel = '难度23';
+            }
+            if (!hardLevel || !imageName) {
+                updateStatus('请选择难度级别并输入图像名称', 'error');
+                return;
+            }
+            
+            updateStatus('正在处理图像...', 'loading');
+            processBtn.disabled = true;
+            
+            // 移除占位符
+            const placeholder = document.getElementById('placeholder');
+            if (placeholder) placeholder.remove();
+            
+            // 清空图像容器
+            imageContainer.innerHTML = '';
+            
+            // 创建图像块数据
+            imageTiles = [];
+            const imageNameWithoutExt = imageName.split('.')[0];
+            
+            // 创建标题行
+            const titleRow = document.createElement('div');
+            titleRow.className = 'image-row';
+            
+            // 添加位置标题
+            const positionTitle = document.createElement('div');
+            positionTitle.className = 'position-label';
+            positionTitle.textContent = '位置';
+            titleRow.appendChild(positionTitle);
+            
+            // 添加方法标题
+            methods.forEach(method => {
+                const methodTitle = document.createElement('div');
+                methodTitle.className = 'image-tile';
+                methodTitle.style.border = 'none';
+                methodTitle.style.cursor = 'default';
+                methodTitle.style.boxShadow = 'none';
+                methodTitle.innerHTML = `
+                    <div style="background: #f0f2f5; height: 40px; display: flex; align-items: center; justify-content: center;">
+                        <div style="font-weight: bold; text-align: center; font-size: 0.9rem;">${method}</div>
+                    </div>
+                `;
+                titleRow.appendChild(methodTitle);
+            });
+            
+            imageContainer.appendChild(titleRow);
+            let tileCount;
+            // const imageName = imageNameSelect.value;
+            if (imageName=='0.bmp' || imageName=='1.bmp' || imageName=='2.bmp' || imageName=='3.bmp' || imageName=='5.bmp' || imageName=='7.bmp' || imageName=='8.bmp'|| imageName=='9.bmp' ) {
+                tileCount = 4;
+            } else if (imageName=='4.png' || imageName=='6.png') {
+                tileCount = 1;
+            } else if (imageName=='1.png'){
+                tileCount = 812;
+            } else if (imageName=='2.png') {
+                tileCount = 870;
+            } else if (imageName=='3.png') {
+                tileCount = 726;
+            } else if (imageName=='4.png') {
+                tileCount = 650;
+            } else if (imageName=='5.png') {
+                tileCount = 957;
+            } else if (imageName=='6.png') {
+                tileCount = 30;
+            } else if (imageName=='7.png') {
+                tileCount = 400;
+            }
+            // 减少图像展示数量，最多展示多少张
+            const maxTilesToShow = imagenumsSelect.value;
+            tileCount = Math.min(tileCount, maxTilesToShow);
+            // 创建图像行
+            for (let pos = 0; pos < tileCount; pos++) {
+                const rowElement = document.createElement('div');
+                rowElement.className = 'image-row';
+                
+                // 添加位置标签
+                const positionLabel = document.createElement('div');
+                positionLabel.className = 'position-label';
+                positionLabel.textContent = pos + 1;
+                rowElement.appendChild(positionLabel);
+                
+                // 添加图像块
+                methods.forEach(method => {
+                    const tileElement = document.createElement('div');
+                    tileElement.className = 'image-tile';
+                    tileElement.dataset.row = pos;
+                    tileElement.dataset.method = method;
+                    
+                    // 构建图像路径
+                    let imagePath;
+                    
+                    if (method === 'label' || method === 'A' || method === 'B') {
+                        imagePath = `paper_show/${method}/${imageNameSelect.value}/${pos}.png`;
+                    }else{
+                        imagePath = `paper_show/${method}/${hardLevel}/${imageNameSelect.value}/${pos}.png`;
+                    }
+                    
+                    
+                    tileElement.innerHTML = `
+                        <img src="${imagePath}" alt="${method} - 位置 ${pos}" 
+                             onerror="this.parentNode.querySelector('.placeholder-img').style.display='flex'; this.style.display='none'">
+                        <div class="placeholder-img" style="display: none;">图像加载失败</div>
+                        <div class="tile-label">${method}</div>
+                    `;
+                    
+                    tileElement.addEventListener('click', () => {
+                        // 取消同一位置的其他选择
+                        const sameRowTiles = document.querySelectorAll(`.image-tile[data-row="${pos}"]`);
+                        sameRowTiles.forEach(tile => {
+                            tile.classList.remove('selected');
+                        });
+                        
+                        // 选择当前图块
+                        tileElement.classList.add('selected');
+                        
+                        // 保存选择
+                        selectedTiles[`${pos}-${method}`] = {
+                            method: method,
+                            position: pos,
+                            hardLevel: hardLevel,
+                            imageName: imageName,
+                            imagePath: imagePath
+                        };
+                        
+                        // 更新选择信息
+                        updateSelectionInfo();
+                    });
+                    
+                    rowElement.appendChild(tileElement);
+                });
+                
+                imageContainer.appendChild(rowElement);
+            }
+            
+            updateStatus(`成功加载 ${tileCount} 个位置`, 'success');
+            processBtn.disabled = false;
+            saveBtn.disabled = false;
+        }
+        
+        function updateSelectionInfo() {
+            const count = Object.keys(selectedTiles).length;
+            selectedCount.textContent = count;
+        }
+        
+        // function saveSelections() {
+        //     const count = Object.keys(selectedTiles).length;
+            
+        //     if (count === 0) {
+        //         updateStatus('请先选择要保存的图像块', 'error');
+        //         return;
+        //     }
+            
+        //     updateStatus('正在保存选择...', 'loading');
+        //     saveBtn.disabled = true;
+            
+        //     // 模拟保存过程
+        //     setTimeout(() => {
+        //         // 构建保存路径信息
+        //         let saveInfo = "保存路径:\n";
+                
+        //         Object.values(selectedTiles).forEach(tile => {
+        //             const path = `${tile.method}/${tile.hardLevel}/${tile.imageName}/${tile.position}.png`;
+        //             saveInfo += path + "\n";
+        //         });
+                
+        //         // 在实际应用中，这里会保存到文件系统
+        //         // 现在只是显示保存信息
+        //         updateStatus(`成功保存 ${count} 个图像块到label文件夹`, 'success');
+        //         console.log("保存路径信息:\n" + saveInfo);
+                
+        //         // 重置选择
+        //         selectedTiles = {};
+        //         updateSelectionInfo();
+                
+        //         // 取消所有选择状态
+        //         document.querySelectorAll('.image-tile.selected').forEach(el => {
+        //             el.classList.remove('selected');
+        //         });
+                
+        //         saveBtn.disabled = false;
+        //     }, 1500);
+        // }
+    </script>
+</body>
+</html>
